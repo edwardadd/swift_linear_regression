@@ -30,7 +30,12 @@ func dJ(_ theta: [Double], j: Int, m: Int, data: [Double], result: [Double]) -> 
     return errorSum / Double(m)
 }
 
-func gradientDescent(_ theta: inout [Double], _ iter: inout Int, _ data: [Double], _ result: [Double], _ m: Int, _ rate: Double) {
+func gradientDescent(_ theta: inout [Double],
+                 _ iteration: inout Int,
+                      _ data: [Double],
+                    _ result: [Double],
+                         _ m: Int,
+              _ learningRate: Double) {
     var prevError: [Double] = [-1, -1]
 
     repeat {
@@ -38,7 +43,7 @@ func gradientDescent(_ theta: inout [Double], _ iter: inout Int, _ data: [Double
         for j in 0..<theta.count {
             errorSquared[j] = dJ(theta, j: j, m: m, data: data, result: result)
         }
-        print("Iteration: \(iter) - theta \(theta) error \(errorSquared)")
+        print("Iteration: \(iteration) - theta \(theta) error \(errorSquared)")
 
         if errorSquared[0].isNaN || theta[0].isNaN ||
             errorSquared[1].isNaN || theta[1].isNaN {
@@ -46,7 +51,6 @@ func gradientDescent(_ theta: inout [Double], _ iter: inout Int, _ data: [Double
         }
 
         var done = true
-
         for j in 0..<theta.count {
             if !errorSquared[j].isEqual(to: prevError[j]) {
                 done = false
@@ -61,29 +65,35 @@ func gradientDescent(_ theta: inout [Double], _ iter: inout Int, _ data: [Double
         prevError = errorSquared
 
         for j in 0..<theta.count {
-            theta[j] -= errorSquared[j] * rate
+            theta[j] -= errorSquared[j] * learningRate
         }
-        iter += 1
-    } while iter < 100_000_000
+        iteration += 1
+    } while iteration < 100_000_000
 }
 
 func main() {
     let result: [Double] = [1, 4, 7, 9, 11, 13, 15, 17]
     let data: [Double] = [1, 1, 1, 1, 1, 1, 1, 1, 
                           0, 1, 2, 3, 4, 5, 6, 7]
-    let m = result.count
-    let rate: Double = 0.001
+    let trainingDataCount = result.count // AKA m
+
+    let learningRate: Double = 0.001
     var theta: [Double] = [0, 0]
-    var iter = 0
+    var iteration = 0
 
     let t0 = DispatchTime.now().uptimeNanoseconds
     
-    gradientDescent(&theta, &iter, data, result, m, rate)
+    gradientDescent(&theta,
+                    &iteration,
+                    data,
+                    result,
+                    trainingDataCount,
+                    learningRate)
     
     let t1 = DispatchTime.now().uptimeNanoseconds
 
     let totalTime = Double(t1 - t0) / 1e6
-    print("Result: \(theta), iter \(iter), time: \(totalTime)")
+    print("Result: \(theta), iteration \(iteration), time: \(totalTime)")
 }
 
 main()
