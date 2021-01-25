@@ -4,55 +4,38 @@ import WinSDK
 import Foundation
 #endif
 
-/// hm is the hypothesis that will produce an expected result
-func hm(_ theta: [Double], x: [Double]) -> Double {
-    theta[0] * x[0] + theta[1] * x[1]
+func prediction(_ theta: Vector, _ X: Matrix) -> Vector {
+    X * theta
 }
 
-/// J performs the mean squared error over the data
-///
-/// theta is an array of parameters that are changing
-/// j is the theta that is being tested against the results
-/// m is the training data count
-/// data is an array of input values for theta
-/// result is the expected result of the hypothesis
-///
-/// returns the sum difference of the hypothesis minus the result as an increment
-func dJ(_ theta: [Double], j: Int, m: Int, data: [Double], result: [Double]) -> Double {
-    var errorSum: Double = 0
-    for i in 0..<m {
-        let xi = data[i + j * m]
-        let h0 = hm(theta, x: [data[i + (0) * m], data[i + (1) * m]])
-        let diff = (h0 - result[i]) * xi
-        errorSum += diff
-    }
-
-    return errorSum / Double(m)
+func cost(theta: Vector, X: Matrix, Y: Vector, j: Int) -> Double {
+    let error = (prediction(theta, X) - Y) * X.column(j)
+    return error.data.reduce(0, +) / Double(Y.count)
 }
 
-func gradientDescent(_ theta: inout [Double],
-                 _ iteration: inout Int,
-                      _ data: [Double],
-                    _ result: [Double],
-                         _ m: Int,
-              _ learningRate: Double) {
-    var prevError: [Double] = [-1, -1]
+func gradientDescent(_ theta: Vector,
+                      _ data: Matrix,
+                    _ result: Vector,
+                    _ learningRate: Double) -> (Vector, Int) {
+    var prevError: Vector = Vector(data: [-1, -1])
+    var iteration = 0
+    var theta = theta
 
     repeat {
-        var errorSquared: [Double] = [-1, -1]
+        var costValue: Vector = Vector(data: [-1, -1])
         for j in 0..<theta.count {
-            errorSquared[j] = dJ(theta, j: j, m: m, data: data, result: result)
+            costValue.data[j] = cost(theta: theta, X: data, Y: result, j: j)
         }
-        print("Iteration: \(iteration) - theta \(theta) error \(errorSquared)")
+        print("Iteration: \(iteration) - theta \(theta) error \(costValue)")
 
-        if errorSquared[0].isNaN || theta[0].isNaN ||
-            errorSquared[1].isNaN || theta[1].isNaN {
+        if costValue[0].isNaN || theta[0].isNaN ||
+            costValue[1].isNaN || theta[1].isNaN {
             break
         }
 
         var done = true
         for j in 0..<theta.count {
-            if !errorSquared[j].isEqual(to: prevError[j]) {
+            if !costValue[j].isEqual(to: prevError[j]) {
                 done = false
                 break
             }
@@ -62,38 +45,41 @@ func gradientDescent(_ theta: inout [Double],
             break
         }
 
-        prevError = errorSquared
+        prevError = costValue
+        theta = theta - (costValue * learningRate)
 
-        for j in 0..<theta.count {
-            theta[j] -= errorSquared[j] * learningRate
-        }
         iteration += 1
     } while iteration < 100_000_000
+
+    return (theta, iteration)
 }
 
 func main() {
-    let result: [Double] = [1, 4, 7, 9, 11, 13, 15, 17]
-    let data: [Double] = [1, 1, 1, 1, 1, 1, 1, 1, 
-                          0, 1, 2, 3, 4, 5, 6, 7]
-    let trainingDataCount = result.count // AKA m
+    let result: Vector = Vector(data: [1.5, 3, 4.5])
+    let data: Matrix = Matrix(data: [1, 1, 1, 2, 1, 3,],
+                              rows: 3,
+                              columns: 2)
 
-    let learningRate: Double = 0.001
-    var theta: [Double] = [0, 0]
-    var iteration = 0
+    let learningRate: Double = 0.01
+    let theta: Vector = Vector(data: [0, 0])
 
     let t0 = DispatchTime.now().uptimeNanoseconds
-    
-    gradientDescent(&theta,
-                    &iteration,
-                    data,
-                    result,
-                    trainingDataCount,
-                    learningRate)
-    
+
+    let (finalTheta, iteration) = gradientDescent(theta,
+                                                  data,
+                                                  result,
+                                                  learningRate)
+
     let t1 = DispatchTime.now().uptimeNanoseconds
 
     let totalTime = Double(t1 - t0) / 1e6
-    print("Result: \(theta), iteration \(iteration), time: \(totalTime)")
+    print("Result: \(finalTheta), iteration \(iteration), time: \(totalTime)")
+
+    print("Test")
+    for i in 0..<result.count {
+        let predicted = data[i, 0] * finalTheta[0] + data[i, 1] * finalTheta[1]
+        print("\(data[i, 0]) * \(finalTheta[0]) + \(data[i, 1]) * \(finalTheta[1]) = \(predicted) | \(result[i])")
+    }
 }
 
 main()
