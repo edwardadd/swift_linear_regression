@@ -5,9 +5,9 @@ import Foundation
 #endif
 
 struct Matrix {
-    var data: [Double]
     var rows: Int
     var columns: Int
+    var data: [Double]
 
     subscript(row: Int, column: Int) -> Double {
         data[column + row * columns]
@@ -30,11 +30,12 @@ struct Matrix {
             }
         }
 
-        return Matrix(data: trans, rows: columns, columns: rows)
+        return Matrix(rows: columns, columns: rows, data: trans)
     }
 }
 
 extension Matrix {
+    // Dot product
     static func * (lhs: Self, rhs: Vector) -> Vector {
         var data: [Double] = []
         for row in 0..<lhs.rows {
@@ -46,33 +47,5 @@ extension Matrix {
         }
 
         return Vector(data: data)
-    }
-}
-
-struct Vector {
-    var data: [Double]
-
-    subscript(index: Int) -> Double {
-        data[index]
-    }
-
-    var count: Int {
-        data.count
-    }
-}
-
-extension Vector {
-    static func * (lhs: Self, rhs: Double) -> Vector {
-        let data = lhs.data.map({ Double($0 * rhs) })
-        return Vector(data: data)
-    }
-
-    static func * (lhs: Self, rhs: Self) -> Self {
-        let v = zip(lhs.data, rhs.data).map { $0.0 * $0.1}
-        return Vector(data: v)
-    }
-
-    static func - (lhs: Self, rhs: Self) -> Self {
-        Vector(data: zip(lhs.data, rhs.data).map { $0.0 - $0.1 })
     }
 }
